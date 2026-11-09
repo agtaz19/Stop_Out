@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+
+# Episode data is built locally from FRED and is not committed until the
+# data licensing check is done (see data/README.md).
+data/cache/
+data/episodes/*.json

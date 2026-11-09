@@ -1,0 +1,78 @@
+# Stop-Out session defaults. Values marked as starting points in the design
+# spec (tau, s0, kappa, eta, agent parameters, surveillance thresholds) are
+# placeholders until the phase 3 calibration runs.
+
+session:
+  format: in_person            # in_person | remote | hybrid
+  rounds: auto                 # auto = 6 under 13 players, else 8
+  episodes: shuffle
+  hide_dates: true
+  team_size: { min: 2, max: 5 }
+  allow_solo: true
+
+funds:
+  assignment: draw             # draw | choose
+  size_draw: log_uniform       # within the tier band, rounded to $1M
+  facilitator_overrides: true  # set role and tier per fund after registration closes; logged
+  tiers:
+    small: { aum_band_usd: [5_000_000, 25_000_000],      repo_spread_bp: 75, auction: [competitive_indirect, noncompetitive] }
+    mid:   { aum_band_usd: [50_000_000, 150_000_000],    repo_spread_bp: 40, auction: [competitive_direct, noncompetitive] }
+    large: { aum_band_usd: [250_000_000, 1_000_000_000], repo_spread_bp: 15, auction: [competitive_dealer] }
+  tier_mix: { small: 0.40, mid: 0.40, large: 0.20 }   # recommended; facilitator may change
+  role_mix: { macro: 0.30, bank: 0.20, pension: 0.20, balanced: 0.30 }
+
+timers_seconds:
+  briefing: 45
+  private_forecast: 15         # each player, before the huddle
+  huddle: 60                   # +30 when remote
+  trading: 120                 # +30 when remote
+  forecast: 30                 # desk head enters the fund forecast
+  debrief: 90
+
+trading_costs:
+  impact_eta_bp: 10
+  liquidity_per_round_usd: 2_000_000_000
+  half_spread_bp: { ust2y: 0.5, ust10y: 1.5, ust30y: 3.0, spx_fut: 0.5, steepener: 1.0 }
+  stress_multiplier: { vix_base: 20, cap: 4 }
+  forced_sale_cost_multiple: 3
+
+risk:
+  drawdown_stop: 0.10           # checked on round-end marks
+  drawdown_stop_capital_cut: 0.50
+  initial_margin: { spx_fut: 0.08, steepener_leg: 0.02 }
+  repo_haircuts: none
+  margin_check: worst_point     # daily path inside the window
+  margin_shortfall_penalty: { base: 20, vix_base: 20, max_multiple: 3 }
+  blow_up: { fund_drawdown: 0.35, penalty: 100, relaunch_seed: 0.25, retier: true }
+  tau_window_scaling: sqrt      # tau * sqrt(dt / 0.25)
+  desk_head_realloc_max: 0.20
+
+scoring:
+  weights: { rounds: 500, risk_adjusted: 300, forecast: 200 }
+  penalty_per_drawdown_stop: 20
+  ir_floor_s0: 0.25
+  forecast_alpha: 0.20
+  tau: { macro: 0.060, bank: 0.020, pension: 0.030, balanced: 0.015 }
+  house_funds: { visible: false, min_entries: 8, large_session_count: 3 }
+  leaderboard_after_rounds: auto   # auto = [3, 6] for 8 rounds, [2, 4] for 6; always shown at the end
+
+auction:
+  count: auto                  # auto = 2 under 13 players, else 3
+  offering_share_of_aum: 0.20
+  offering_min_usd: 500_000_000
+  award_cap: 0.35
+  dealer_obligation_bp: 3
+  noncompetitive_max_usd: 10_000_000
+  tail_impact_kappa: 0.5
+
+agents:
+  target_cover_multiple: 1.6
+  counts: { foreign_official: 4, foreign_private: 6, real_money: 7, hedge_fund: 7, house_dealer: 1 }
+  seed: random                 # stored in the event log, never sent to clients
+
+surveillance:
+  mirror:  { cosine_max: -0.80, limit_use_min: 0.70, rounds_min: 3 }
+  auction: { cluster_bp: 0.5, above_wi_bp: 2.0, funds_min: 3 }
+  copy:
+    in_person: { seconds_max: 15, cosine_min: 0.95, rounds_min: 3 }
+    remote:    { seconds_max: 30, cosine_min: 0.95, rounds_min: 2 }

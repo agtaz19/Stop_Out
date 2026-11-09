@@ -1,0 +1,14 @@
+{
+  "name": "stop-out",
+  "private": true,
+  "description": "Stop-Out: a facilitator-led Treasury and equity trading game",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:data": "python3 -m unittest discover -s data/tests -v"
+  }
+}
