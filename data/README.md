@@ -15,6 +15,10 @@
 
 Each episode file records the start, end, lowest, and highest value of every series inside the window, with dates, plus the daily path the engine uses for worst-point margin checks. It also records which series are missing, any fallback used, the trailing 1-year 10y average, and the 2s10s slope at both ends.
 
+## Analyst panel
+
+Each file's `derived.analyst_panel` holds the statistics players see at the briefing, computed only from observations before the window opens: realized daily volatility over 20 and 60 days and the 20-day change for the 2y and 10y (in bp), the 10y against its trailing 1-year average, the S&P 20-day return and daily volatility, the prior VIX close (rounded), and the number of trading days in the window. Every value is a change, spread, or volatility, so the engine's hidden curve offset leaves the panel unchanged and it cannot be matched to a date.
+
 ## Current build (2026-11-09)
 
 All 14 files pass the schema check. Six windows lack a complete equity series, because FRED's `SP500` starts on 2016-11-07:

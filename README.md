@@ -200,6 +200,19 @@ Agent parameters and seeds stay on the server and are written to the event log, 
 
 ---
 
+## Analysis and fairness
+
+Both fundamental and quantitative analysts can play with their own analysis:
+
+- **Fundamental:** the full release in its real format, with consensus and the prior print, plus the window length and curve shape.
+- **Quantitative:** an analyst panel at every briefing with trailing 20- and 60-day realized volatility and 20-day change for the 2y and 10y, the 10y against its 1-year average, the S&P 20-day return and volatility, the prior VIX close, and the trading days in the window. Players may bring their own models, backtested beforehand on the prep kit's unblinded practice windows.
+
+**Blinding.** Every yield shown and priced is shifted by a hidden per-episode offset $o$ of 50 to 150bp in either direction, logged and revealed at the end:
+
+$$o \sim \mathrm{Uniform}\big([-150, -50] \cup [50, 150]\big), \qquad o \ge 5 - \min y_{3m}, \qquad y' = y + o$$
+
+Changes, spreads, curve shape, and durations are unchanged; only carry moves slightly. The analyst panel uses only changes and volatilities, so the offset leaves it unchanged and it cannot fingerprint a date. Own calculators, spreadsheets, and models are allowed on on-screen information; outside market data and news are not, and the attestation says so.
+
 ## Market integrity
 
 Coordination within a fund is teamwork. Coordination between funds, including between a solo player and a team, is what the integrity rules address. The design makes collusion unprofitable first and detects it second.
@@ -359,6 +372,16 @@ agents:
   target_cover_multiple: 1.6
   counts: { foreign_official: 4, foreign_private: 6, real_money: 7, hedge_fund: 7, house_dealer: 1 }
   seed: random                 # stored in the event log, never sent to clients
+
+blinding:
+  curve_offset_bp: [50, 150]   # hidden per-episode shift, either sign; revealed at the end
+  min_shifted_bill_bp: 5       # offsets that push the 3m bill below 0.05% are not drawn
+  vix_rounding: 1              # VIX shown as a whole number
+  sp500_indexed: true          # S&P shown as 100 at each window start
+
+analyst_panel:
+  show_window_length: true
+  lookback_days: [20, 60]      # realized vol and changes from data before the window only
 
 surveillance:
   mirror:  { cosine_max: -0.80, limit_use_min: 0.70, rounds_min: 3 }

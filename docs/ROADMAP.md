@@ -21,11 +21,13 @@ Ten weeks to a pilot is an estimate for one or two part-time developers. Each ph
 - [x] Schema validator with missing-series and partial-coverage reporting
 - [ ] Choose an equity total-return source for 1994, 2008, 2013, 2004, and 2011 (FRED's S&P 500 starts 2016-11-07)
 - [ ] Licensing check on FRED, S&P, and Cboe data before any built file is committed or published
+- [x] Analyst-panel statistics from pre-window data only (shift-invariant)
 - [ ] Decide on the 2020 window (see data/README.md)
 
 ## Phase 2: engine core
 
 - [x] Interval score, percentile ranks with averaged ties, round points, shrunk information ratio
+- [ ] Episode blinding: seeded hidden curve offset, logged and revealed at the end
 - [ ] Exact bond repricing with curve interpolation
 - [ ] S&P futures, steepener with carry, repo, initial margin
 - [ ] Trading cost with the VIX stress multiplier
@@ -37,3 +39,9 @@ Ten weeks to a pilot is an estimate for one or two part-time developers. Each ph
 - [ ] Full scoring: normalized excess with window-scaled tau, forecasts, penalties, tie-breaks
 - [ ] Surveillance monitors
 - [ ] Event log and replay
+
+## Phase 6: content and prep kit
+
+- [ ] Analyst toolkit: unblinded practice-window data, analyst-panel statistics, and the sandbox engine functions for backtesting
+- [ ] One-page release-reaction note per practice window for fundamental players
+- [ ] Episode packs: briefings, FOMC redlines, debrief cards, agent biases, auction rounds

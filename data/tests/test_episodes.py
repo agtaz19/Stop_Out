@@ -8,6 +8,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from build_episodes import (  # noqa: E402
     SERIES,
+    analyst_panel,
+    trailing_points,
+    yield_panel,
     build_episode,
     load_windows,
     parse_fred_csv,
@@ -66,6 +69,39 @@ class WindowTests(unittest.TestCase):
     def test_trailing_average_excludes_start_day(self):
         obs = [("2022-03-01", 9.0), ("2022-03-10", 1.0), ("2023-01-01", 3.0), ("2023-03-08", 100.0)]
         self.assertAlmostEqual(trailing_average(obs, "2023-03-08"), 2.0)
+
+
+def daily_history(n: int, start_value: float, step: float, start_day: str = "2023-01-02"):
+    from datetime import date, timedelta
+    d0 = date.fromisoformat(start_day)
+    return [((d0 + timedelta(days=i)).isoformat(), start_value + step * i) for i in range(n)]
+
+
+class AnalystPanelTests(unittest.TestCase):
+    def test_uses_only_pre_window_data(self):
+        hist = daily_history(80, 4.0, 0.01)
+        before = hist[70][0]
+        self.assertTrue(all(d < before for d, _ in trailing_points(hist, before, 60)))
+        self.assertEqual(len(trailing_points(hist, before, 60)), 60)
+
+    def test_constant_drift_has_zero_vol_and_known_change(self):
+        hist = daily_history(80, 4.0, 0.01)  # +1bp a day
+        panel = yield_panel(hist, hist[75][0])
+        self.assertEqual(panel["realized_vol_bp_per_day_20d"], 0.0)
+        self.assertEqual(panel["change_20d_bp"], 20.0)
+
+    def test_panel_is_unchanged_by_a_level_offset(self):
+        base = {"DGS10": daily_history(80, 4.0, 0.013), "DGS2": daily_history(80, 4.5, -0.007)}
+        shifted = {k: [(d, v + 1.25) for d, v in pts] for k, pts in base.items()}
+        before = base["DGS10"][75][0]
+        a, b = analyst_panel(base, before, 5), analyst_panel(shifted, before, 5)
+        self.assertEqual(a["dgs2"], b["dgs2"])
+        for key in ("realized_vol_bp_per_day_20d", "realized_vol_bp_per_day_60d", "change_20d_bp"):
+            self.assertAlmostEqual(a["dgs10"][key], b["dgs10"][key], places=6)
+
+    def test_short_history_gives_none(self):
+        hist = daily_history(10, 4.0, 0.01)
+        self.assertIsNone(yield_panel(hist, hist[-1][0])["realized_vol_bp_per_day_60d"])
 
 
 class BuildTests(unittest.TestCase):

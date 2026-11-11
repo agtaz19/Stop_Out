@@ -125,6 +125,75 @@ def trailing_average(points: list[Observation], before: str, days: int = TRAILIN
     return sum(values) / len(values) if values else None
 
 
+def trailing_points(points: list[Observation], before: str, n: int) -> list[Observation]:
+    """The last n observations strictly before `before` (no look-ahead)."""
+    return [p for p in points if p[0] < before][-n:]
+
+
+def _sample_sd(values: list[float]) -> float | None:
+    if len(values) < 2:
+        return None
+    mean = sum(values) / len(values)
+    return (sum((v - mean) ** 2 for v in values) / (len(values) - 1)) ** 0.5
+
+
+def yield_panel(points: list[Observation], before: str) -> dict:
+    """Shift-invariant statistics of a yield series before the window opens.
+
+    Daily changes and their volatility are in basis points, so a hidden
+    level offset applied to the curve leaves every value unchanged.
+    """
+    out: dict[str, float | None] = {}
+    for n in (20, 60):
+        tail = trailing_points(points, before, n + 1)
+        changes = [(b[1] - a[1]) * 100 for a, b in zip(tail, tail[1:])]
+        sd = _sample_sd(changes) if len(changes) == n else None
+        out[f"realized_vol_bp_per_day_{n}d"] = None if sd is None else round(sd, 2)
+    tail = trailing_points(points, before, 21)
+    out["change_20d_bp"] = round((tail[-1][1] - tail[0][1]) * 100, 1) if len(tail) == 21 else None
+    return out
+
+
+def equity_panel(points: list[Observation], before: str) -> dict | None:
+    """20-day return and daily log-return volatility of the index, in percent."""
+    import math
+
+    tail = trailing_points(points, before, 21)
+    if len(tail) < 21:
+        return None
+    rets = [math.log(b[1] / a[1]) * 100 for a, b in zip(tail, tail[1:])]
+    sd = _sample_sd(rets)
+    return {
+        "return_20d_pct": round((tail[-1][1] / tail[0][1] - 1) * 100, 2),
+        "realized_vol_pct_per_day_20d": None if sd is None else round(sd, 3),
+    }
+
+
+def analyst_panel(histories: dict[str, list[Observation]], start_date: str, trading_days: int) -> dict:
+    """Pre-window statistics shown to players at the briefing.
+
+    Built only from observations before the window opens, and only from
+    changes, spreads, and volatilities, so it supports forecasting models
+    without giving away levels that could identify the episode.
+    """
+    panel: dict[str, object] = {
+        "computed_from": "observations strictly before the window start",
+        "trading_days_in_window": trading_days,
+    }
+    if "DGS10" in histories:
+        ten = yield_panel(histories["DGS10"], start_date)
+        avg = trailing_average(histories["DGS10"], start_date)
+        last = trailing_points(histories["DGS10"], start_date, 1)
+        ten["vs_1y_avg_bp"] = round((last[0][1] - avg) * 100, 1) if avg is not None and last else None
+        panel["dgs10"] = ten
+    if "DGS2" in histories:
+        panel["dgs2"] = yield_panel(histories["DGS2"], start_date)
+    panel["sp500"] = equity_panel(histories["SP500"], start_date) if "SP500" in histories else None
+    vix = trailing_points(histories.get("VIXCLS", []), start_date, 1)
+    panel["vix_prior_close"] = round(vix[0][1]) if vix else None
+    return panel
+
+
 # --- Episode assembly -------------------------------------------------------
 
 
@@ -173,6 +242,9 @@ def build_episode(defn: dict, fetch: SeriesFetcher) -> dict:
             edge: round((series["DGS10"][edge]["value"] - series["DGS2"][edge]["value"]) * 100, 2)
             for edge in ("start", "end")
         }
+
+    trading_days = series["DGS10"]["observations"] if "DGS10" in series else 0
+    derived["analyst_panel"] = analyst_panel(histories, start, trading_days)
 
     return {
         "schema_version": SCHEMA_VERSION,

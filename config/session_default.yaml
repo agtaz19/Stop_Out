@@ -76,3 +76,13 @@ surveillance:
   copy:
     in_person: { seconds_max: 15, cosine_min: 0.95, rounds_min: 3 }
     remote:    { seconds_max: 30, cosine_min: 0.95, rounds_min: 2 }
+
+blinding:
+  curve_offset_bp: [50, 150]   # hidden per-episode shift, either sign; revealed at the end
+  min_shifted_bill_bp: 5       # offsets that push the 3m bill below 0.05% are not drawn
+  vix_rounding: 1              # VIX shown as a whole number
+  sp500_indexed: true          # S&P shown as 100 at each window start
+
+analyst_panel:
+  show_window_length: true
+  lookback_days: [20, 60]      # realized vol and changes from data before the window only
